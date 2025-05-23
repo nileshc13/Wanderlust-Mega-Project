@@ -14,34 +14,40 @@ jobs:
         env:
           MONGO_INITDB_ROOT_USERNAME: root
           MONGO_INITDB_ROOT_PASSWORD: example
+        ports:
+          - 27017:27017
         options: >-
-          --health-cmd "mongosh --eval 'db.adminCommand({ ping: 1 })'"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+          --health-cmd="mongosh --eval 'db.adminCommand({ ping: 1 })'" 
+          --health-interval=10s 
+          --health-timeout=5s 
+          --health-retries=5
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Install mongosh CLI
+      - name: Install Mongo Shell
         run: |
-          wget -qO - https://www.mongodb.org/static/pgp/server-6.0.asc | sudo apt-key add -
-          echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/6.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-6.0.list
+          sudo apt-get update
+          sudo apt-get install -y gnupg curl
+          curl -fsSL https://pgp.mongodb.com/server-6.0.asc | \
+            sudo gpg -o /usr/share/keyrings/mongodb-server-6.0.gpg --dearmor
+          echo "deb [ signed-by=/usr/share/keyrings/mongodb-server-6.0.gpg ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/6.0 multiverse" | \
+            sudo tee /etc/apt/sources.list.d/mongodb-org-6.0.list
           sudo apt-get update
           sudo apt-get install -y mongodb-mongosh
 
       - name: Wait for MongoDB to become healthy
         run: |
           for i in {1..30}; do
-            mongosh --host mongo --username root --password example --authenticationDatabase admin --eval "db.adminCommand('ping')" && break
+            mongosh "mongodb://root:example@mongo:27017/admin" --eval "db.adminCommand('ping')" && break
             echo "Waiting for MongoDB to be healthy..."
             sleep 5
           done
 
-      - name: Run MongoDB connectivity test
+      - name: MongoDB connectivity test
         run: |
-          mongosh --host mongo --username root --password example --authenticationDatabase admin --eval "db.stats()"
+          mongosh "mongodb://root:example@mongo:27017/admin" --eval "db.stats()"
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
