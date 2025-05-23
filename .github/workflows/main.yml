@@ -11,43 +11,20 @@ jobs:
     services:
       mongo:
         image: mongo:6.0
-        env:
-          MONGO_INITDB_ROOT_USERNAME: root
-          MONGO_INITDB_ROOT_PASSWORD: example
+        options: >-
+          --health-cmd "echo 'db.stats()' | mongosh localhost:27017/test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 3
         ports:
           - 27017:27017
-        options: >-
-          --health-cmd="mongosh --eval 'db.adminCommand({ ping: 1 })'" 
-          --health-interval=10s 
-          --health-timeout=5s 
-          --health-retries=5
+    env:
+      MONGO_INITDB_ROOT_USERNAME: "root"
+      MONGO_INITDB_ROOT_PASSWORD: "example"
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
-
-      - name: Install Mongo Shell
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y gnupg curl
-          curl -fsSL https://pgp.mongodb.com/server-6.0.asc | \
-            sudo gpg -o /usr/share/keyrings/mongodb-server-6.0.gpg --dearmor
-          echo "deb [ signed-by=/usr/share/keyrings/mongodb-server-6.0.gpg ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/6.0 multiverse" | \
-            sudo tee /etc/apt/sources.list.d/mongodb-org-6.0.list
-          sudo apt-get update
-          sudo apt-get install -y mongodb-mongosh
-
-      - name: Wait for MongoDB to become healthy
-        run: |
-          for i in {1..30}; do
-            mongosh "mongodb://root:example@mongo:27017/admin" --eval "db.adminCommand('ping')" && break
-            echo "Waiting for MongoDB to be healthy..."
-            sleep 5
-          done
-
-      - name: MongoDB connectivity test
-        run: |
-          mongosh "mongodb://root:example@mongo:27017/admin" --eval "db.stats()"
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
