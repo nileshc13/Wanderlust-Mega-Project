@@ -11,16 +11,16 @@ jobs:
     services:
       mongo:
         image: mongo:6.0
+        options: >-
+          --health-cmd "mongo --eval 'db.adminCommand('ping')'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 3
         ports:
           - 27017:27017
-        env:
-          MONGO_INITDB_ROOT_USERNAME: admin
-          MONGO_INITDB_ROOT_PASSWORD: admin123
-        options: >-
-          --health-cmd "mongo --eval 'db.runCommand({ connectionStatus: 1 })'" 
-          --health-interval 10s 
-          --health-timeout 5s 
-          --health-retries 5
+    env:
+      MONGO_INITDB_ROOT_USERNAME: "root"
+      MONGO_INITDB_ROOT_PASSWORD: "example"
 
     steps:
       - name: Checkout code
